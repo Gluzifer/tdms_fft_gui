@@ -1,10 +1,8 @@
-# img_viewer.py
-
-
 import PySimpleGUI as sg
 import os.path
 from tdms_fft import tdms_fft
 from nptdms import TdmsFile
+import numpy as np
 
 
 # First the window layout in 2 columns
@@ -18,11 +16,27 @@ file_list_column = [
     ],
     [
         sg.Listbox(
-            values=[], enable_events=True, size=(40, 20), key="-FILE LIST-"
+            values=[], enable_events=True, size=(40, 10), key="-FILE LIST-"
         )
     ],
     [
         sg.Button("Read File", key="-READ DATA-")
+    ],
+    [
+        sg.Text("Groups"),
+    ],
+    [
+        sg.Listbox(
+            values=[], enable_events=True, size=(40, 10), key="-GROUP LIST-"
+        )
+    ],
+    [
+        sg.Text("Channels"),
+    ],
+    [
+        sg.Listbox(
+            values=[], enable_events=True, size=(40, 10), key="-CHANNEL LIST-"
+        )
     ]
 ]
 
@@ -48,23 +62,22 @@ plot_controls_column = [
         sg.Text("Warning: Large datasets take some time to process!"),
     ],
     [
-        sg.Text("Groups"),
+        sg.Checkbox("Truncate to power of two", default=False, key="-TRUNCATE-")
     ],
     [
-        sg.Listbox(
-            values=[], enable_events=True, size=(40, 10), key="-GROUP LIST-"
-        )
+        sg.Text("(FFT runs most efficiently if the number of samples )")
     ],
     [
-        sg.Text("Channels"),
+        sg.Text("is a power of two. Maybe for large datasets.")
     ],
     [
-        sg.Listbox(
-            values=[], enable_events=True, size=(40, 10), key="-CHANNEL LIST-"
-        )
+        sg.Text("Warning: This TRUNCATES the data meaning part of it")
     ],
     [
-        sg.Button("Calculate fft", key="-CALCULATE FFT-")
+        sg.Text("will be ignored!")
+    ],
+    [
+        sg.Button("Calculate fft", key="-CALCULATE FFT-"),
     ]
 
 ]
@@ -165,10 +178,17 @@ while True:
         sample_rate = int(values["-SAMPLERATE-"])
         if values["-DATA START-"] == '' or values["-DATA END-"] == '':
             data_start = 0
-            data_end = len(channel)
+            if values["-TRUNCATE-"]:
+                data_end = int(2**np.floor(np.log2((len(channel)))))
+            else:
+                data_end = len(channel)
         else:
             data_start = int(values["-DATA START-"])
-            data_end = int(values["-DATA END-"])
+            if values["-TRUNCATE-"]:
+                data_end = int(values["-DATA END-"])
+                data_end = int(2**np.floor(np.log2((data_end-data_start)))) + data_start
+            else:
+                data_end = int(values["-DATA END-"])
 
         tdms_fft(tdms_file, group.name, channel.name, sample_rate, data_start, data_end)
 

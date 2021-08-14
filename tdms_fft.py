@@ -19,7 +19,6 @@ def tdms_fft(tdms_file, group_name, channel_name, sr, data_start, data_end):
     # Assign data to variable used in fft
     x = channel_data[data_start:data_end]
 
-
     # sampling rate
     # resolution is 0.1 sec, thus sampling rate is 1/0.1 = 100
     # sr = 200000
