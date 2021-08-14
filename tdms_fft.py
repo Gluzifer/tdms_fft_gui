@@ -4,7 +4,7 @@ from scipy.fft import fft, fftfreq, ifft
 from nptdms import TdmsFile
 
 
-def tdms_fft(tdms_file, group_name, channel_name, sr):
+def tdms_fft(tdms_file, group_name, channel_name, sr, data_start, data_end):
     plt.style.use('seaborn-poster')
 
     # t = []
@@ -17,7 +17,7 @@ def tdms_fft(tdms_file, group_name, channel_name, sr):
     channel_properties = channel.properties
 
     # Assign data to variable used in fft
-    x = channel_data[0:100000]
+    x = channel_data[data_start:data_end]
 
 
     # sampling rate
@@ -31,10 +31,13 @@ def tdms_fft(tdms_file, group_name, channel_name, sr):
 
     plt.figure(figsize = (12, 6))
 
-    plt.stem(freq, np.abs(X), 'b', markerfmt=" ", basefmt="-b")
+    half_length = int(len(X) / 2) # len(X) will due to symmetry always be odd
+
+    # Plot while excluding the negative frequencies
+    plt.stem(freq[0:half_length], np.abs(X)[0:half_length], 'b', markerfmt=" ", basefmt="-b")
     plt.xlabel('Freq (Hz)')
     plt.ylabel('FFT Amplitude |X(freq)|')
-    plt.xlim(0, 100000)
+    # plt.xlim(0, 100000)
     # Set yscale according to maximum excluding the constant term
     plt.ylim(0, max(np.abs(X)[1:]))
     plt.tight_layout()

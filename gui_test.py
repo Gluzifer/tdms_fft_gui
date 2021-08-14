@@ -28,8 +28,24 @@ file_list_column = [
 
 plot_controls_column = [
     [
-        sg.Text("Sample rate in Hz"),
-        sg.In(size=(25, 1), enable_events=True, key="-SAMPLERATE-"),
+        sg.Text("Sample rate in Hz:"),
+        sg.Input(size=(10, 1), enable_events=True, key="-SAMPLERATE-"),
+    ],
+    [
+        sg.Text("Number of datapoints: "),
+        sg.Text("Select file, group and channel first.", key="-N OF DATAPOINTS-")
+    ],
+    [
+        sg.Text("Range of datapoints to process:"),
+        sg.Input(size=(10, 1), default_text='0', enable_events=True, key="-DATA START-"),
+        sg.Text("to"),
+        sg.Input(size=(10, 1), enable_events=True, key="-DATA END-"),
+    ],
+    [
+        sg.Text("(Defaults to all if either field is left empty)"),
+    ],
+    [
+        sg.Text("Warning: Large datasets take some time to process!"),
     ],
     [
         sg.Text("Groups"),
@@ -65,7 +81,7 @@ layout = [
 ]
 
 
-window = sg.Window("Image Viewer", layout)
+window = sg.Window("TDMS fft tool", layout)
 
 
 # Run the Event Loop
@@ -139,12 +155,21 @@ while True:
         try:
             channel = group[values["-CHANNEL LIST-"][0]]
             channel_set = True
+            window["-N OF DATAPOINTS-"].update(len(channel))
 
         except:
             pass
 
-    elif event =="-CALCULATE FFT-" and channel_set == True:
+    elif event == "-CALCULATE FFT-" and channel_set and values["-SAMPLERATE-"] != '':
         # tdms_fft(tdms_file, group.name, channel.name, 
-        print(window["-SAMPLERATE-"].read())
+        sample_rate = int(values["-SAMPLERATE-"])
+        if values["-DATA START-"] == '' or values["-DATA END-"] == '':
+            data_start = 0
+            data_end = len(channel)
+        else:
+            data_start = int(values["-DATA START-"])
+            data_end = int(values["-DATA END-"])
+
+        tdms_fft(tdms_file, group.name, channel.name, sample_rate, data_start, data_end)
 
 window.close()
