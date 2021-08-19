@@ -4,7 +4,7 @@ from scipy.fft import fft, fftfreq, ifft
 from nptdms import TdmsFile
 
 
-def tdms_fft(tdms_file, group_name, channel_name, sr, data_start, data_end):
+def tdms_fft(tdms_file, group_name, channel_name, sr, data_start, data_end, plot_type='stem', plot_linewidth=1, plot_linealpha=1):
     plt.style.use('seaborn-poster')
 
     # t = []
@@ -33,9 +33,17 @@ def tdms_fft(tdms_file, group_name, channel_name, sr, data_start, data_end):
     half_length = int(len(X) / 2) # len(X) will due to symmetry always be odd
 
     # Plot while excluding the negative frequencies
-    plt.stem(freq[0:half_length], np.abs(X)[0:half_length], 'b', markerfmt=" ", basefmt="-b")
+    if plot_type == 'stem':
+        markerline, stemlines, baseline = plt.stem(freq[0:half_length], np.abs(X)[0:half_length], 'b', markerfmt=" ", basefmt=" ")
+        plt.setp(stemlines, 'linewidth', plot_linewidth)
+        plt.setp(stemlines, 'alpha', plot_linealpha)
+    elif plot_type == 'line':
+        plt.plot(freq[0:half_length], np.abs(X)[0:half_length], linewidth=plot_linewidth, alpha=plot_linealpha)
+    elif plot_type == 'step':
+        plt.step(freq[0:half_length], np.abs(X)[0:half_length], linewidth=plot_linewidth, alpha=plot_linealpha)
+
     plt.xlabel('Freq (Hz)')
-    plt.ylabel('FFT Amplitude |X(freq)|')
+    plt.ylabel('FFT Amplitude')
     # plt.xlim(0, 100000)
     # Set yscale according to maximum excluding the constant term
     plt.ylim(0, max(np.abs(X)[1:]))

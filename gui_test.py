@@ -3,11 +3,12 @@ import os.path
 from tdms_fft import tdms_fft
 from nptdms import TdmsFile
 import numpy as np
+import re
 
 
 # First the window layout in 2 columns
 
-
+list_width = 53
 file_list_column = [
     [
         sg.Text("TDMS file folder", key="-SOMETEXT-"),
@@ -16,7 +17,7 @@ file_list_column = [
     ],
     [
         sg.Listbox(
-            values=[], enable_events=True, size=(40, 10), key="-FILE LIST-"
+            values=[], enable_events=True, size=(list_width, 10), key="-FILE LIST-"
         )
     ],
     [
@@ -27,7 +28,7 @@ file_list_column = [
     ],
     [
         sg.Listbox(
-            values=[], enable_events=True, size=(40, 10), key="-GROUP LIST-"
+            values=[], enable_events=True, size=(list_width, 10), key="-GROUP LIST-"
         )
     ],
     [
@@ -35,7 +36,7 @@ file_list_column = [
     ],
     [
         sg.Listbox(
-            values=[], enable_events=True, size=(40, 10), key="-CHANNEL LIST-"
+            values=[], enable_events=True, size=(list_width, 10), key="-CHANNEL LIST-"
         )
     ]
 ]
@@ -43,7 +44,10 @@ file_list_column = [
 plot_controls_column = [
     [
         sg.Text("Sample rate in Hz:"),
-        sg.Input(size=(10, 1), enable_events=True, key="-SAMPLERATE-"),
+        sg.Input(size=(10, 1), enable_events=True, key="-SAMPLERATE-")
+    ],
+    [
+        sg.HorizontalSeparator()
     ],
     [
         sg.Text("Number of datapoints: "),
@@ -62,10 +66,13 @@ plot_controls_column = [
         sg.Text("Warning: Large datasets take some time to process!"),
     ],
     [
+        sg.HorizontalSeparator()
+    ],
+    [
         sg.Checkbox("Truncate to power of two", default=False, key="-TRUNCATE-")
     ],
     [
-        sg.Text("(FFT runs most efficiently if the number of samples )")
+        sg.Text("FFT runs most efficiently if the number of samples")
     ],
     [
         sg.Text("is a power of two. Maybe for large datasets.")
@@ -76,6 +83,45 @@ plot_controls_column = [
     [
         sg.Text("will be ignored!")
     ],
+    [
+        sg.HorizontalSeparator()
+    ],
+    [
+        sg.Text("Plot type:"),
+        sg.Radio('line', "RADIO1", default=True, key="-LINE PLOT RADIO-"),
+        sg.Radio('step', "RADIO1", default=False, key="-STEP PLOT RADIO-"),
+        sg.Radio('stem', "RADIO1", default=False, key="-STEM PLOT RADIO-")
+    ],
+    [
+        sg.Text("Warning: \"stem\" uses ridiculous amounts of ram"),
+    ],
+    [
+        sg.Text("if there are more than about 10^6 datapoints."),
+    ],
+    [
+        sg.HorizontalSeparator()
+    ],
+    [
+        sg.Text("Line thickness:"),
+        sg.Input(size=(10, 1), default_text='1', enable_events=True, key="-LINE THICKNESS-"),
+        sg.Text("(positive float)")
+    ],
+    [
+        sg.Text("Line alpha (transparency):"),
+        sg.Input(size=(10, 1), default_text='1', enable_events=True, key="-LINE ALPHA-"),
+        sg.Text("(value between 0 and 1)")
+    ],
+    [
+        sg.Text("There are ways to input something that does not match")
+    ],
+    [
+        sg.Text("the intended pattern. Don't do it, the plot will not work.")
+    ],
+
+    [
+        sg.HorizontalSeparator()
+    ],
+
     [
         sg.Button("Calculate fft", key="-CALCULATE FFT-"),
     ]
@@ -169,13 +215,53 @@ while True:
             channel = group[values["-CHANNEL LIST-"][0]]
             channel_set = True
             window["-N OF DATAPOINTS-"].update(len(channel))
+            try:
+                assumed_samplerate = 1/channel.properties['wf_increment']
+                window["-SAMPLERATE-"].update(assumed_samplerate)
+            except:
+                pass
 
+        except:
+            pass
+
+    elif event == "-LINE THICKNESS-":
+        # Make sure alpha and witdh values are valid
+        try:
+            cleaned_input = ''
+            for i in re.findall("[0-9, .]+", values['-LINE THICKNESS-']):
+                cleaned_input += i
+
+            cleaned_input = re.sub(r"\.\.", '.', cleaned_input)
+            window['-LINE THICKNESS-'].update(cleaned_input)
+
+            if float(values['-LINE THICKNESS-']) < 0:
+                window['-LINE THICKNESS-'].update(abs(float(values['-LINE THICKNESS-'])))
+        except:
+            pass
+
+    elif event == "-LINE ALPHA-":
+        # Make sure alpha and witdh values are valid
+        try:
+            cleaned_input = ''
+            for i in re.findall("[0-9, .]+", values['-LINE ALPHA-']):
+                cleaned_input += i
+
+            cleaned_input = re.sub(r"\.\.", '.', cleaned_input)
+            window['-LINE ALPHA-'].update(cleaned_input)
+
+            # print(cleaned_input)
+
+            if float(values['-LINE ALPHA-']) < 0:
+                window['-LINE ALPHA-'].update(abs(float(values['-LINE ALPHA-'])))
+
+            if float(values['-LINE ALPHA-']) > 1:
+                window['-LINE ALPHA-'].update(1)
         except:
             pass
 
     elif event == "-CALCULATE FFT-" and channel_set and values["-SAMPLERATE-"] != '':
         # tdms_fft(tdms_file, group.name, channel.name, 
-        sample_rate = int(values["-SAMPLERATE-"])
+        sample_rate = float(values["-SAMPLERATE-"])
         if values["-DATA START-"] == '' or values["-DATA END-"] == '':
             data_start = 0
             if values["-TRUNCATE-"]:
@@ -190,6 +276,15 @@ while True:
             else:
                 data_end = int(values["-DATA END-"])
 
-        tdms_fft(tdms_file, group.name, channel.name, sample_rate, data_start, data_end)
+        # Plot style
+        if values["-STEM PLOT RADIO-"]:
+            plot_type = 'stem'
+        elif values["-LINE PLOT RADIO-"]:
+            plot_type = 'line'
+        elif values["-STEP PLOT RADIO-"]:
+            plot_type = 'step'
+
+        tdms_fft(tdms_file, group.name, channel.name, sample_rate, data_start, data_end,
+                 plot_type, plot_linewidth=float(values['-LINE THICKNESS-']), plot_linealpha=float(values['-LINE ALPHA-']))
 
 window.close()
