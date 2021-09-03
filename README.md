@@ -25,4 +25,5 @@ Set the desired options in the right column and click "Run FFT" to run
 the fft and display the output. 
 The output will be displayed in the default matplotlib plot viewer. 
 From there the plot may be saved as a image file if desired.
-
+For more information on how to use the matplotlib plot viewer see the 
+[matplotlib documentation](https://matplotlib.org/3.2.2/users/navigation_toolbar.html).
