@@ -134,7 +134,10 @@ plot_controls_column = [
         sg.Text("The csv file will be saved in the same directory as the")
     ],
     [
-        sg.Text("application is run in.")
+        sg.Text("application is run in. The filename will be the same as the")
+    ],
+    [
+        sg.Text("tdms filename. WARNING: Present files will be overwritten!")
     ],
     [
         sg.Text("WARNING: The csv file may be as much as 400% larger than the tdms!")
