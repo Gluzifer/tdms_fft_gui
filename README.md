@@ -27,3 +27,7 @@ The output will be displayed in the default matplotlib plot viewer.
 From there the plot may be saved as a image file if desired.
 For more information on how to use the matplotlib plot viewer see the 
 [matplotlib documentation](https://matplotlib.org/3.2.2/users/navigation_toolbar.html).
+
+There is also a crude function for saving the data from the selected
+channel to a .csv file. It works but is very simple and does not yet
+warn you before it overwrites a present file (!).
