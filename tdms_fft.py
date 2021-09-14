@@ -2,6 +2,44 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.fft import fft, fftfreq, ifft
 from nptdms import TdmsFile
+import csv
+
+
+def convert_to_csv(tdms_file, group_name, channel_name, sr, data_start, data_end, filename, include_time_axis=True):
+    t = []
+    x = []
+
+    # tdms_file = TdmsFile.read(filepath)
+    group = tdms_file[group_name]
+    channel = group[channel_name]
+    channel_data = channel[:]
+
+    # Assign data to variable
+    x = channel_data[data_start:data_end]
+
+    # Create nparray with the desired data
+    if include_time_axis:
+        # Generate time variable list
+        for i in range(len(x)):
+            t.append(i * 1/sr)
+        data_to_write = np.array([t, x]).transpose()
+    else:
+        data_to_write = np.array(x).transpose()
+
+    # Write the data into a csv
+
+    # writing to csv file 
+    out_filename = filename[:-4] + "csv"
+    fields = ["Time since start of data in seconds", "Signal Amplitude"]
+    with open(out_filename, 'w') as csvfile:
+        # creating a csv writer object
+        csvwriter = csv.writer(csvfile)
+        # writing the fields
+        csvwriter.writerow(fields)
+        # writing the data rows
+        csvwriter.writerows(data_to_write)
+
+    # np.savetxt(out_filename, data_to_write, delimiter=",")
 
 
 def tdms_fft(tdms_file, group_name, channel_name, sr, data_start, data_end, plot_type='stem', plot_linewidth=1, plot_linealpha=1):
@@ -14,7 +52,7 @@ def tdms_fft(tdms_file, group_name, channel_name, sr, data_start, data_end, plot
     group = tdms_file[group_name]
     channel = group[channel_name]
     channel_data = channel[:]
-    channel_properties = channel.properties
+    # channel_properties = channel.properties
 
     # Assign data to variable used in fft
     x = channel_data[data_start:data_end]

@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
 import os.path
-from tdms_fft import tdms_fft
+from tdms_fft import tdms_fft, convert_to_csv
 from nptdms import TdmsFile
 import numpy as np
 import re
@@ -78,7 +78,7 @@ plot_controls_column = [
         sg.Text("is a power of two. Maybe for large datasets.")
     ],
     [
-        sg.Text("Warning: This TRUNCATES the data meaning part of it")
+        sg.Text("WARNING: This TRUNCATES the data meaning part of it")
     ],
     [
         sg.Text("will be ignored!")
@@ -93,7 +93,7 @@ plot_controls_column = [
         sg.Radio('stem', "RADIO1", default=False, key="-STEM PLOT RADIO-")
     ],
     [
-        sg.Text("Warning: \"stem\" uses ridiculous amounts of ram"),
+        sg.Text("WARNING: \"stem\" uses ridiculous amounts of ram"),
     ],
     [
         sg.Text("if there are more than about 10^6 datapoints."),
@@ -124,8 +124,24 @@ plot_controls_column = [
 
     [
         sg.Button("Calculate fft", key="-CALCULATE FFT-"),
-    ]
-
+        sg.Button("Convert to csv", key="-SAVE AS CSV-"),
+        sg.Checkbox("Include time axis", default=True, key="-INCLUDE TIME AXIS-")
+    ],
+    [
+        sg.HorizontalSeparator()
+    ],
+    [
+        sg.Text("The csv file will be saved in the same directory as the")
+    ],
+    [
+        sg.Text("application is run in.")
+    ],
+    [
+        sg.Text("WARNING: The csv file may be as much as 400% larger than the tdms!")
+    ],
+    [
+        sg.Text("Depending on filesize this may take some time...")
+    ],
 ]
 
 
@@ -286,5 +302,25 @@ while True:
 
         tdms_fft(tdms_file, group.name, channel.name, sample_rate, data_start, data_end,
                  plot_type, plot_linewidth=float(values['-LINE THICKNESS-']), plot_linealpha=float(values['-LINE ALPHA-']))
+
+    elif event == "-SAVE AS CSV-" and channel_set and values["-SAMPLERATE-"] != '':
+        sample_rate = float(values["-SAMPLERATE-"])
+        if values["-DATA START-"] == '' or values["-DATA END-"] == '':
+            data_start = 0
+            if values["-TRUNCATE-"]:
+                data_end = int(2**np.floor(np.log2((len(channel)))))
+            else:
+                data_end = len(channel)
+        else:
+            data_start = int(values["-DATA START-"])
+            if values["-TRUNCATE-"]:
+                data_end = int(values["-DATA END-"])
+                data_end = int(2**np.floor(np.log2((data_end-data_start)))) + data_start
+            else:
+                data_end = int(values["-DATA END-"])
+
+        convert_to_csv(tdms_file, group.name, channel.name, sample_rate, data_start, data_end,
+                       values["-FILE LIST-"][0], values["-INCLUDE TIME AXIS-"])
+
 
 window.close()

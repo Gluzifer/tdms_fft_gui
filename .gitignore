@@ -1,2 +1,4 @@
 *.tdms
 *__pycache__
+*.csv
+*.rar
